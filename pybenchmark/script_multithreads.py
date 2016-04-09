@@ -1,5 +1,4 @@
 # coding = utf-8
-
 import threading
 import time
 import requests
@@ -13,7 +12,7 @@ SUC = 0
 
 
 class RequestThread(threading.Thread):
-    def __init__(self, thread_name):
+    def __init__(self):
         threading.Thread.__init__(self)
         self.test_count = 0
 
@@ -36,7 +35,7 @@ if __name__ == '__main__':
     start_time = time.time()
     threads = []
     for i in range(THREAD_COUNT):
-        thread = RequestThread("thread" + str(i))
+        thread = RequestThread()
         threads.append(thread)
         thread.start()
     word = ''
