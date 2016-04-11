@@ -265,7 +265,7 @@ def resolve(url):
 
 
 def load(url, requests, concurrency, duration, method, data, ct, auth,
-         headers=None, pre_hook=None, post_hook=None, quiet=False):
+         headers=None, pre_hook=None, post_hook=None, quiet=False, prof=False):
     if not quiet:
         print_server_info(url, method, headers=headers)
 
@@ -278,12 +278,39 @@ def load(url, requests, concurrency, duration, method, data, ct, auth,
 
         sys.stdout.write('Starting the load')
     try:
-        return run(url, requests, duration, method,
-                   data, ct, auth, concurrency, headers,
-                   pre_hook, post_hook, quiet=quiet)
+        if prof:
+            import profile, pstats
+            pr = profile.Profile()
+            d = {
+                'run': run,
+                'url': url,
+                'requests': requests,
+                'duration': duration,
+                'method': method,
+                'data': data,
+                'ct': ct,
+                'auth': auth,
+                'concurrency': concurrency,
+                'headers':headers,
+                'pre_hook': pre_hook,
+                'post_hook': post_hook,
+                 }
+            pr.runctx('result = run(url, requests, duration, method, data, ct, auth,\
+                           concurrency, headers, pre_hook, post_hook)', None, d)
+            result = d['result']
+            pr.dump_stats('profiledata')
+            ps = pstats.Stats('profiledata')
+            ps.strip_dirs()
+            ps.sort_stats('cumulative')
+            ps.print_stats()
+            return result
+        else:
+            return run(url, requests, duration, method,
+                       data, ct, auth, concurrency, headers,
+                       pre_hook, post_hook, quiet=quiet)
     finally:
         if not quiet:
-            print(' Done')
+            print('Done')
 
 
 def main():
@@ -317,13 +344,17 @@ def main():
                               "raise an `boom._boom.RequestException` for "
                               "failed request."),
                         type=str)
-
     parser.add_argument('--json-output',
                         help='Prints the results in JSON instead of the '
                              'default format',
                         action='store_true')
+    parser.add_argument('-C','--cookie',help='''Add cookie, eg.'id=1234'. (repeatable)''',
+                        type=str)
+    group0 = parser.add_mutually_exclusive_group()
+    group0.add_argument('-q', '--quiet', help="Don't display progress bar",
+                        action='store_true')
 
-    parser.add_argument('-q', '--quiet', help="Don't display progress bar",
+    group0.add_argument('-p','--profile',help="Run under the Python profile",
                         action='store_true')
 
     group = parser.add_mutually_exclusive_group()
@@ -383,7 +414,7 @@ def main():
             url, args.requests, args.concurrency, args.duration,
             args.method, args.data, args.content_type, args.auth,
             headers=headers, pre_hook=args.pre_hook,
-            post_hook=args.post_hook, quiet=(args.json_output or args.quiet))
+            post_hook=args.post_hook, quiet=(args.json_output or args.quiet),prof=args.profile)
     except RequestException as e:
         print_errors((e, ))
         sys.exit(1)
