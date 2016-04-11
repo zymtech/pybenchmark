@@ -11,7 +11,7 @@ from pybenchmark import __version__
 from print_info import print_stats, print_json, print_errors
 from loadandrun import load
 from resolve_url import resolve
-
+from cat_proxyurl import cat_purl
 monkey.patch_all()
 
 logger = logging.getLogger('pybenchmark')
@@ -56,6 +56,11 @@ def main():
                              'default format',
                         action='store_true')
     parser.add_argument('-C', '--cookies', help='''Add cookie, eg.'id=1234'. (repeatable)''',
+                        type=str, default=None)
+    parser.add_argument('-P', '--proxyauth', help="Add Basic Proxy Authentication, "
+                                                  "use a colon to separate username and password",
+                        type=str, default=None)
+    parser.add_argument('-X', '--proxy', help="Configure proxy, server and port to use",
                         type=str, default=None)
     group0 = parser.add_mutually_exclusive_group()
     group0.add_argument('-q', '--quiet', help="Don't display progress bar",
@@ -116,6 +121,13 @@ def main():
 
     if original != resolved and 'Host' not in headers:
         headers['Host'] = original
+
+    if args.proxyauth:
+        if args.proxy:
+            args.proxy = cat_purl(args.proxyauth, args.proxy)
+        else:
+            print("You need to provide proxy info using -X or --proxy")
+            sys.exit(0)
 
     try:
         res = load(
