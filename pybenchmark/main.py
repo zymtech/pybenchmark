@@ -1,5 +1,7 @@
 # coding = utf-8
 import argparse
+import ast
+import json
 import sys
 import gevent
 import time
@@ -19,6 +21,8 @@ from requests.packages.urllib3.util import parse_url
 from pybenchmark import __version__
 from pybenchmark.util import resolve_name
 from pybenchmark.pgbar import AnimatedProgressBar
+from print_info import print_stats,print_server_info,print_json,print_errors
+from parser_cookies import parser_cookies
 
 monkey.patch_all()
 
@@ -96,58 +100,6 @@ def calc_stats(results):
     )
 
 
-def print_stats(results):
-    stats = calc_stats(results)
-    rps = stats.rps
-
-    print('')
-    print('-------- Results --------')
-
-    print('Successful calls\t\t%r' % stats.count)
-    print('Total time        \t\t%.4f s  ' % stats.total_time)
-    print('Average           \t\t%.4f s  ' % stats.avg)
-    print('Fastest           \t\t%.4f s  ' % stats.min)
-    print('Slowest           \t\t%.4f s  ' % stats.max)
-    print('Amplitude         \t\t%.4f s  ' % stats.amp)
-    print('Standard deviation\t\t%.6f' % stats.stdev)
-    print('RPS               \t\t%d' % rps)
-    print('')
-    print('-------- Status codes --------')
-    for code, items in results.status_code_counter.items():
-        print('Code %d          \t\t%d times.' % (code, len(items)))
-    print('')
-    print('-------- Legend --------')
-    print('RPS: Request Per Second')
-
-
-def print_server_info(url, method, headers=None):
-    res = requests.head(url)
-    print(
-        'Server Software: %s' %
-        res.headers.get('server', 'Unknown'))
-    print('Running %s %s' % (method, url))
-
-    if headers:
-        for k, v in headers.items():
-            print('\t%s: %s' % (k, v))
-
-
-def print_errors(errors):
-    if len(errors) == 0:
-        return
-    print('')
-    print('-------- Errors --------')
-    for error in errors:
-        print(error)
-
-
-def print_json(results):
-    """Prints a JSON representation of the results to stdout."""
-    import json
-    stats = calc_stats(results)
-    print(json.dumps(stats._asdict()))
-
-
 def onecall(method, url, results, **options):
     """Performs a single HTTP call and puts the result into the
        status_code_counter.
@@ -183,7 +135,7 @@ def onecall(method, url, results, **options):
 
 def run(
     url, num=1, duration=None, method='GET', data=None, ct='text/plain',
-        auth=None, concurrency=1, headers=None, pre_hook=None, post_hook=None,
+        auth=None, concurrency=1, cookies=None, headers=None, pre_hook=None, post_hook=None,
         quiet=False):
 
     if headers is None:
@@ -210,6 +162,10 @@ def run(
 
     if auth is not None:
         options['auth'] = tuple(auth.split(':', 1))
+
+    cookies_dict = parser_cookies(cookies)
+    if cookies is not None:
+        options['cookies'] = cookies_dict
 
     pool = Pool(concurrency)
 
@@ -264,7 +220,7 @@ def resolve(url):
             original, host)
 
 
-def load(url, requests, concurrency, duration, method, data, ct, auth,
+def load(url, requests, concurrency, duration, method, data, ct, auth, cookies,
          headers=None, pre_hook=None, post_hook=None, quiet=False, prof=False):
     if not quiet:
         print_server_info(url, method, headers=headers)
@@ -291,12 +247,13 @@ def load(url, requests, concurrency, duration, method, data, ct, auth,
                 'ct': ct,
                 'auth': auth,
                 'concurrency': concurrency,
+                'cookies': cookies,
                 'headers':headers,
                 'pre_hook': pre_hook,
                 'post_hook': post_hook,
                  }
             pr.runctx('result = run(url, requests, duration, method, data, ct, auth,\
-                           concurrency, headers, pre_hook, post_hook)', None, d)
+                           concurrency, cookies, headers, pre_hook, post_hook)', None, d)
             result = d['result']
             pr.dump_stats('profiledata')
             ps = pstats.Stats('profiledata')
@@ -306,7 +263,7 @@ def load(url, requests, concurrency, duration, method, data, ct, auth,
             return result
         else:
             return run(url, requests, duration, method,
-                       data, ct, auth, concurrency, headers,
+                       data, ct, auth, concurrency, cookies, headers,
                        pre_hook, post_hook, quiet=quiet)
     finally:
         if not quiet:
@@ -348,8 +305,8 @@ def main():
                         help='Prints the results in JSON instead of the '
                              'default format',
                         action='store_true')
-    parser.add_argument('-C','--cookie',help='''Add cookie, eg.'id=1234'. (repeatable)''',
-                        type=str)
+    parser.add_argument('-C','--cookies',help='''Add cookie, eg.'id=1234'. (repeatable)''',
+                        type=str, default=None)
     group0 = parser.add_mutually_exclusive_group()
     group0.add_argument('-q', '--quiet', help="Don't display progress bar",
                         action='store_true')
@@ -384,6 +341,7 @@ def main():
 
     if args.requests is None and args.duration is None:
         args.requests = 1
+
     try:
         url, original, resolved = resolve(args.url)
     except gaierror as e:
@@ -412,7 +370,7 @@ def main():
     try:
         res = load(
             url, args.requests, args.concurrency, args.duration,
-            args.method, args.data, args.content_type, args.auth,
+            args.method, args.data, args.content_type, args.auth, args.cookies,
             headers=headers, pre_hook=args.pre_hook,
             post_hook=args.post_hook, quiet=(args.json_output or args.quiet),prof=args.profile)
     except RequestException as e:

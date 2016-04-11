@@ -1,4 +1,7 @@
-import request
+import requests
+import math
+
+from collections import namedtuple
 
 RunStats = namedtuple(
     'RunStats', ['count', 'total_time', 'rps', 'avg', 'min',
