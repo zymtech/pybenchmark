@@ -1,5 +1,6 @@
 # coding = utf-8
 import argparse
+import os
 import sys
 import logging
 
@@ -128,6 +129,12 @@ def main():
         else:
             print("You need to provide proxy info using -X or --proxy")
             sys.exit(0)
+
+    if args.proxy:
+        if "HTTPS" in args.proxy:
+            os.environ["HTTPS_PROXY"] = args.proxy
+        else:
+            os.environ["HTTP_PROXY"] = args.proxy
 
     try:
         res = load(

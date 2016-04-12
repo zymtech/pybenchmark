@@ -5,7 +5,7 @@ def fix_url(url):
     return url
 
 
-def cat_purl(auth,url):
+def cat_purl(auth, url):
     """concatenate auth info with provided proxy url"""
     url = fix_url(url).split('//')
     caturl = url[0] + '//' + auth + '@' + url[1]
