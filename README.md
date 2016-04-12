@@ -14,6 +14,7 @@ Options:
                             username and password.
       -X, --proxy PROXY     Configure proxy, server and port to use.
       -p, --profile         Run program under python profile, default to FALSE.
+      -s, --timeout TIMEOUT Set max seconds to wait for each response, default to 30 seconds.
       -m {GET,POST,DELETE,PUT,HEAD,OPTIONS}, --method {GET,POST,DELETE,PUT,HEAD,OPTIONS}
                             HTTP Method
       --content-type CONTENT_TYPE

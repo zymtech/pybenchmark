@@ -63,6 +63,8 @@ def main():
                         type=str, default=None)
     parser.add_argument('-X', '--proxy', help="Configure proxy, server and port to use",
                         type=str, default=None)
+    parser.add_argument('-s', '--timeout', help="Seconds to max wait for each response, default to 30s",
+                        type=int, default=30)
     group0 = parser.add_mutually_exclusive_group()
     group0.add_argument('-q', '--quiet', help="Don't display progress bar",
                         action='store_true')
@@ -139,7 +141,7 @@ def main():
     try:
         res = load(
             url, args.requests, args.concurrency, args.duration,
-            args.method, args.data, args.content_type, args.auth, args.cookies,
+            args.method, args.data, args.content_type, args.auth, args.cookies, args.timeout,
             headers=headers, pre_hook=args.pre_hook,
             post_hook=args.post_hook, quiet=(args.json_output or args.quiet), prof=args.profile)
     except RequestException as e:

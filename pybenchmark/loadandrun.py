@@ -81,7 +81,7 @@ def onecall(method, url, results, **options):
 
 def run(
     url, num=1, duration=None, method='GET', data=None, ct='text/plain',
-        auth=None, concurrency=1, cookies=None, headers=None, pre_hook=None, post_hook=None,
+        auth=None, concurrency=1, cookies=None, timeout=30, headers=None, pre_hook=None, post_hook=None,
         quiet=False):
 
     if headers is None:
@@ -114,6 +114,8 @@ def run(
     if cookies is not None:
         options['cookies'] = cookies_dict
 
+    options['timeout'] = timeout
+
     pool = Pool(concurrency)
 
     start = time.time()
@@ -143,7 +145,7 @@ def run(
     return res
 
 
-def load(url, requests, concurrency, duration, method, data, ct, auth, cookies,
+def load(url, requests, concurrency, duration, method, data, ct, auth, cookies, timeout,
          headers=None, pre_hook=None, post_hook=None, quiet=False, prof=False):
     if not quiet:
         print_server_info(url, method, headers=headers)
@@ -172,12 +174,13 @@ def load(url, requests, concurrency, duration, method, data, ct, auth, cookies,
                 'auth': auth,
                 'concurrency': concurrency,
                 'cookies': cookies,
+                'timeout': timeout,
                 'headers': headers,
                 'pre_hook': pre_hook,
                 'post_hook': post_hook,
             }
             pr.runctx('result = run(url, requests, duration, method, data, ct, auth,\
-                           concurrency, cookies, headers, pre_hook, post_hook)', None, d)
+                           concurrency, cookies, timeout, headers, pre_hook, post_hook)', None, d)
             result = d['result']
             pr.dump_stats('profiledata')
             ps = pstats.Stats('profiledata')
@@ -187,7 +190,7 @@ def load(url, requests, concurrency, duration, method, data, ct, auth, cookies,
             return result
         else:
             return run(url, requests, duration, method,
-                       data, ct, auth, concurrency, cookies, headers,
+                       data, ct, auth, concurrency, cookies, timeout, headers,
                        pre_hook, post_hook, quiet=quiet)
     finally:
         if not quiet:
