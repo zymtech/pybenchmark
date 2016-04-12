@@ -68,7 +68,7 @@ def main():
                         action='store_true')
 
     group0.add_argument('-p', '--profile', help="Run under the Python profile",
-                        action='store_true')
+                        action='store_true', default=False)
 
     group = parser.add_mutually_exclusive_group()
 

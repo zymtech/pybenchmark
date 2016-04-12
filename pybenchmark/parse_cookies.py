@@ -1,7 +1,7 @@
 import re
 
 
-def parser_cookies(cookies):
+def parse_cookies(cookies):
     """convert cookies in dict format"""
     # find all matches
     matches = re.findall(r'\w+=[\w.]+',cookies)

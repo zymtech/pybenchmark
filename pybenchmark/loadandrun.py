@@ -7,7 +7,7 @@ from collections import defaultdict, namedtuple
 from requests import RequestException
 from copy import copy
 from gevent.pool import Pool
-from parse_cookies import parser_cookies
+from parse_cookies import parse_cookies
 
 from pybenchmark.util import resolve_name
 from pybenchmark.pgbar import AnimatedProgressBar
@@ -109,7 +109,8 @@ def run(
     if auth is not None:
         options['auth'] = tuple(auth.split(':', 1))
 
-    cookies_dict = parser_cookies(cookies)
+    if cookies:
+        cookies_dict = parse_cookies(cookies)
     if cookies is not None:
         options['cookies'] = cookies_dict
 
