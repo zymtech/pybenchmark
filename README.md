@@ -1,5 +1,5 @@
 # pybenchmark
-A Replacement of ApacheBenchmark Written in Python
+A Replacement of ApacheBenchmark Written in Python.Used for load-testing and benchmarking your HTTP server.
 
 #Usage
 Just run the main.py with options and url.
